@@ -3,6 +3,7 @@ __author__ = 'Kami'
 import ast
 import inspect
 import astunparse
+from copy import copy
 
 
 def bind_params(names, call_node):
@@ -35,34 +36,36 @@ class TCO_Replace(ast.NodeTransformer):
                 names = [n.arg for n in self.node.body[0].args.args]
                 params = bind_params(names, node.value)
 
-                ret = []
+                tl, tr = [], []
                 for k, v in params.items():
-                    left = [ast.Name(id=k, ctx=ast.Store())]
-                    assign = ast.Assign(targets=left, value=v)
-                    ret.append(assign)
-                ret.append(ast.Continue())
-                return ret
+                    tl.append(ast.Name(id=k, ctx=ast.Store()))
+                    tr.append(v)
+
+                tl = ast.Tuple(elts=tl, ctx=ast.Store())
+                tr = ast.Tuple(elts=tr, ctx=ast.Load())
+                assign = ast.Assign(targets=[tl], value=tr)
+                return [assign, ast.Continue()]
 
         return node
 
 
-class tco:
-    def __init__(self, func):
-        s = inspect.getsource(func)
-        t = ast.parse(s)
-        t.body[0].decorator_list = []
-        old = t.body[0].body[:2]
-        t.body[0].body = [
-            ast.While(test=ast.Name(id='True', ctx=ast.Load()),
-                      body=old, orelse=[])]
-        TCO_Replace(func, t).replace_nodes()
-        ast.fix_missing_locations(t)
-        src = astunparse.unparse(t)
-        fmt = "{}\nret={}(*args, **kwargs)"
-        self.code = compile(fmt.format(src, func.__name__), "<string>", "exec")
+def tco(func):
+    s = inspect.getsource(func)
+    t = ast.parse(s)
+    t.body[0].decorator_list = []
+    old = t.body[0].body
+    t.body[0].body = [
+        ast.While(test=ast.Name(id='True', ctx=ast.Load()),
+                  body=old, orelse=[])]
+    TCO_Replace(func, t).replace_nodes()
+    ast.fix_missing_locations(t)
+    src = astunparse.unparse(t)
+    fmt = "{}\nret={}(*args, **kwargs)"
+    code = compile(fmt.format(src, func.__name__), "<string>", "exec")
 
-    def __call__(self, *args, **kwargs):
-        exec(self.code, globals(), locals())
+    def w(*args, **kwargs):
+        exec(code, globals(), locals())
         return locals()["ret"]
 
+    return w
 
