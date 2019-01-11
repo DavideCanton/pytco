@@ -1,17 +1,16 @@
-__author__ = 'Kami'
-
 import ast
 import inspect
 import astunparse
 from copy import copy
+
+__author__ = 'Kami'
 
 
 def bind_params(names, call_node):
     values = {}
 
     if len(names) != len(call_node.args):
-        raise ValueError("Incorrect number of params {} (expected {})".format(
-            len(call_node.args), len(names)))
+        raise ValueError(f"Incorrect number of params ${len(call_node.args)} (expected ${len(names)})")
 
     for name, arg in zip(names, call_node.args):
         values[name] = arg
@@ -68,4 +67,3 @@ def tco(func):
         return locals()["ret"]
 
     return w
-

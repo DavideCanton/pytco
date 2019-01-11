@@ -1,8 +1,8 @@
-__author__ = 'Kami'
-
 from pytco import tco
 from timeit import default_timer as timer
 import sys
+
+__author__ = 'Kami'
 
 
 @tco
