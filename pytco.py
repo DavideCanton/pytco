@@ -18,7 +18,7 @@ def bind_params(names, call_node):
     return values
 
 
-class TCO_Replace(ast.NodeTransformer):
+class TcoReplace(ast.NodeTransformer):
     def __init__(self, func, node):
         self.name = node.body[0].name
         self.node = node
@@ -55,8 +55,10 @@ def tco(func):
     old = t.body[0].body
     t.body[0].body = [
         ast.While(test=ast.Name(id='True', ctx=ast.Load()),
-                  body=old, orelse=[])]
-    TCO_Replace(func, t).replace_nodes()
+                  body=old,
+                  orelse=[])
+    ]
+    TcoReplace(func, t).replace_nodes()
     ast.fix_missing_locations(t)
     src = astunparse.unparse(t)
     fmt = f"{src}\nret={func.__name__}(*args, **kwargs)"
